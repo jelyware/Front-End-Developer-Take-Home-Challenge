@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardComponentWrapper } from "./DashboardComponent.styled";
-import { fetchData } from "../../services/fake-http-dashboard.service";
+import { configureData } from "../../services/fake-http-dashboard.service";
 import {
    RuxTable,
    RuxTableHeader,
@@ -15,10 +15,28 @@ import DashboardTableRowComponent from "../DashboardTableRowComponent/DashboardT
 import AlertDetailsModalComponent from "../AlertDetailsModalComponent/AlertDetailsModalComponent";
 
 const DashboardComponent = () => {
-   /* Fake endpoint call to fetch and cache all data */
-   const [data, setData] = useState(fetchData())
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [selectedAlert, setSelectedAlert] = useState(null);
+   
+   // ##### START: Data
+   const [data, setData] = useState([])
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState(null);
+
+   // useEffect to fetch data when the component mounts
+   useEffect( async () => {
+      // Make the API request inside useEffect
+      fetch("http://localhost:5000/api/data")
+         .then((data) => {
+            const rawData = data.json(); // Parse and return JSON response
+            console.log('JLL_DEBUG what is the data?????', rawData)
+            const sanitized = configureData(rawData);
+            setData(sanitized); // Set the fetched data to state
+            setLoading(false); // Set loading to false once data is fetched
+         })
+         .catch((error) => {
+            setError(error); // Handle any errors that occur during fetch
+            setLoading(false); // Set loading to false even if there was an error
+         });
+   }, []); // Empty dependency array means this effect runs only once when the component mounts
 
    const getAlerts = () => {
       // Retrieves alerts based on initial data sorted by timestamp DESC
@@ -27,6 +45,11 @@ const DashboardComponent = () => {
         .sort((a, b) => b.contactStartTime - a.contactStartTime);
    }
    const [alerts, setAlerts] = useState(getAlerts());
+   // ##### END: Data
+
+   // ##### START: Alert Modal
+   const [isModalOpen, setIsModalOpen] = useState(false);
+   const [selectedAlert, setSelectedAlert] = useState(null);
 
    // Function to open the modal and set selected alert data
    const handleOpenModal = (alert) => {
@@ -64,7 +87,9 @@ const DashboardComponent = () => {
 
       handleCloseModal();
    };
+   // ##### END: Alert Modal
 
+   // ##### START: Filter
    const handleFilterChange = (filterChange) => {
       const filtered = getAlerts().filter((alert) => {
          let include = true;
@@ -97,6 +122,7 @@ const DashboardComponent = () => {
       change.contactName === ""
       || (change.contactName?.length && alert.contactName.includes(change.contactName))
    );
+   // ##### END: Filter
 
    return (
       <DashboardComponentWrapper data-testid="DashboardComponent">

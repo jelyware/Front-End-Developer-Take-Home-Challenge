@@ -9,5 +9,10 @@ module.exports = {
         },
       ],
     },
+    resolve: {
+      fallback: {
+        fs: false, // ✅ Prevent Webpack from bundling `fs`
+      },
+    },
   };
   
